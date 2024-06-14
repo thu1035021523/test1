@@ -1,0 +1,105 @@
+` 反引號 按(Alt + 右邊數字96)
+CREATE DATABASE `資料庫名稱`;  #創建資料庫
+DROP DATABASE `資料庫名稱`;  #刪除資料庫
+SHOW DATABASES;  #展示資料庫
+USE `資料庫名稱`;  #選擇要使用的資料庫
+CREATE TABLE `表格名稱`(內容);  #創建表格
+DESCRIBE `表格名稱`;  #展示表格內容
+DROP TABLE `表格名稱`;  #刪除表格
+ALTER TABLE `表格名稱` ADD 屬性名稱 資料型態;  #新增屬性至列表
+ALTER TABLE `表格名稱` DROP COLUMN 屬性名稱;  #刪除列表屬性
+INSERT INTO `表格名稱` VALUES(要填入的資料);  #填入資料 若填入字串要加單/雙引號 沒有填NULL
+WHERE `major` = A OR `major` = B OR `major` = C;等同於
+WHERE `major` IN(A, B, C);
+=======================================================
+constraints 限制、約束
+舉例來說:
+`name` VARCHAR(20) NOT NULL  指name這屬性的值不能為空
+`major` VARCHAR(20) UNIQUE  指major這屬性的值不能重複
+`major` VARCHAR(20) DEFAULT '歷史'  指major這屬性的值預設為歷史
+`student_id` INT AUTO_INCREMENT 會自動增加id的值，不用每筆都手動輸入
+=======================================================
+--- 修改資料 ---
+前置作業:SET SQL_SAFE_UPDATES = 0;  #關閉預設的更新模式
+UPDATE `表格名稱`
+SET `欄位名稱` = 修改後內容  #寫上要更新的東西
+WHERE `欄位名稱` = 修改前內容  #條件判斷，沒加會把全部都改掉
+例:1. UPDATE `student`
+		SET `major` = '英語文學'
+		WHERE `major` = '英語';
+	2. UPDATE `student`
+		SET `major` = '英語文學'
+		WHERE `student_id` = 3;
+	3. UPDATE `student`
+		SET `major` = '生化'
+		WHERE `major` = '生物' OR `major` = '化學';
+	4. UPDATE `student`
+		SET `name` = '小灰', `major` = '英語文學'
+		WHERE `student_id` = 1;
+--- 刪除資料 ---
+DELETE FROM `表格名稱`
+WHERE `欄位名稱` = 欲刪除之位置  #條件判斷，沒加會把全部都刪掉
+例:1. DELETE FROM `student`
+		WHERE `student_id` = 3;
+	2. DELETE FROM `student`
+		WHERE `name` = '小灰' AND `major` = '英語文學';
+--- 取得、搜尋資料 ---
+SELECT * FROM `表格名稱` LIMIT 數字;  #從表格獲取全部的"數字"筆資料，*:取得所有屬性
+SELECT `屬性名稱1` FROM `表格名稱` ORDER BY `屬性名稱2` DESC;  #ORDER BY: 依據屬性排序， DESC: 由高到低排序，沒寫的話預設是ASC(由低到高)
+例:1. SELECT `name`, `major` FROM `student`;
+	2. SELECT * FROM `student` ORDER BY `score`, student_id DESC;  #先照分數排序，若分數相同在照id排序
+	3. SELECT * FROM `student` WHERE `major` = '生物' OR `score` >= 20;
+--- aggregate functions 聚合函數 ---
+例: 1.取得員工人數
+		SELECT COUNT(*) FROM `employee`;
+	 2.取得所有出生於1970-01-01之後的女性員工人數
+		SELECT COUNT(*) FROM `employee` WHERE `birth_date` > '1970-01-01' AND `sex` = 'F';
+	 3.獲取所有員工的平均薪水
+		SELECT AVG(`salary`) FROM `employee`;
+	 4.獲取所有員工的薪水總和
+		SELECT SUM(`salary`) FROM `employee`;
+	 5.取得薪水最高的員工
+		SELECT MAX(`salary`) FROM `employee`;
+	 6.取得薪水最低的員工
+		SELECT MIN(`salary`) FROM `employee`;
+--- wildcards 萬用字元 ---
+% 表示多個字元， _ 代表一個字元
+例: 1.取得電話號碼尾數為335的客戶
+		SELECT * FROM `client` WHERE `phone` LIKE '%335';
+	 2.取得姓艾的客戶
+		SELECT * FROM `client` WHERE `client_name` LIKE '艾%';
+	 3.取得生日在12月的員工
+		SELECT * FROM `employee` WHERE `birth_date` LIKE '_____12%';
+--- union 聯集 ---
+SELECT `A-1` AS `欲替代的名稱`, `A-2` AS `欲替代的名稱` FROM `表格A` UNION SELECT `B-1`, `B-2` FROM `表格B`;
+例: 1.員工名字 union 客戶名字
+		SELECT `name` FROM `employee` UNION SELECT `client_name` FROM `client`;
+	 2.員工id + 名字 union 客戶 id +名字
+		SELECT `emp_id` AS `total_id`, `name` AS `total_name` FROM `employee` UNION SELECT `client_id`, `client_name` FROM `client`;
+--- join 連接兩個表格 ---
+例: 1.取得所有部門經理的名字
+		SELECT * FROM `employee` LEFT/RIGHT JOIN `branch` on `employee`.`emp_id` = `branch`.`manager_id`;  #LEFT 意指 JOIN 左邊的表格不管條件有無成立都會回傳所有資料，右邊的表格要條件成立才會傳資料，條件不成立會回傳NULL #RIGHT 反過來
+--- subquery 子查詢 ---
+例: 取得研發部門經理的名字
+    SELECT `name` FROM `employee` WHERE `emp_id` = (SELECT `manager_id` FROM `branch` WHERE `branch_name` = '研發');
+
+=======================================================
+MySQL 的資料型態
+PRIMARY KEY  #唯一可識別資料表中每個資料的值
+FOREIGN KEY  #連到其他表格，簡稱FK
+	語法1.:FOREIGN KEY (FK 是哪個屬性) REFERENCES `對應的表格名稱`(`對應表格內的屬性`) ON DELETE SET NULL  #REFERENCES: 對應到
+	語法2.: FOREIGN KEY (`client_id`) REFERENCES `client`(`client_id`) ON DELETE CASCADE
+	#on delete 
+		1. ON DELETE SET NULL 指若對應的屬性不存在，則 FK 設為 NULL
+		2. ON DELETE SET CASCADE 指若對應的屬性不存在，則跟著一起刪掉
+INT  #整數
+DECIMAL(m, n)  #浮點數 表示共有m位數 小數點佔n位數
+VARCHAR(n)  #字串 最多存放n個字元
+BLOB  #(Binary Large Object) 圖片 影片 檔案...  存放二進制資料
+DATE  #'YYYY-MM-DD' 日期
+TIMESTAMP  #'YYYY-MM-DD HH:MM:SS' 紀錄時間
+=======================================================
+MySQL 的比較符號
+> 大於	>= 大於等於
+< 小於	<= 小於等於
+= 等於	<> 不等於
